@@ -12,11 +12,13 @@
 //!
 //!
 
-use nscldaq_ringbuffer::ringbuffer::{consumer, producer};
+use nscldaq_ringbuffer::ringbuffer::{consumer, producer, RingBufferMap};
 use portman_client;
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
+use std::path;
 use std::process;
+use std::sync::{Arc, Mutex};
 
 //
 // Types of errors we can produce:
@@ -24,6 +26,7 @@ use std::process;
 pub enum Error {
     ConsumerError(consumer::Error),
     ProducerError(producer::Error),
+    MapError(String),
     PortManError(portman_client::Error),
     NoRingMaster,
     RingMasterFail(String),
@@ -78,7 +81,28 @@ pub fn set_portman_port(new_port: u16) {
 /// that's holding the connection to the ring master.
 ///
 pub fn attach_consumer(ring_buffer_file: &str) -> RingClientResult {
-    Err(Error::Unimplemented)
+    match get_ringmaster_port() {
+        Ok(port) => match RingBufferMap::new(ring_buffer_file) {
+            Ok(raw_map) => {
+                let safe_map = Arc::new(Mutex::new(raw_map));
+                match consumer::Consumer::attach(&Arc::clone(&safe_map)) {
+                    Ok(consumer) => {
+                        let slot = consumer.get_index();
+                        match connect_consumer(port, &ring_name(&ring_buffer_file), slot) {
+                            Err(e) => Err(e),
+                            Ok(stream) => Ok(RingClient {
+                                client: ClientType::Consumer(consumer),
+                                ring_master: stream,
+                            }),
+                        }
+                    }
+                    Err(e) => Err(Error::ConsumerError(e)),
+                }
+            }
+            Err(s) => Err(Error::MapError(s)),
+        },
+        Err(e) => Err(e),
+    }
 }
 
 /*-----------------------------------------------------------------
@@ -88,6 +112,8 @@ pub fn attach_consumer(ring_buffer_file: &str) -> RingClientResult {
 
 */
 
+// Return the port the ringmaster is listening on:
+//
 fn get_ringmaster_port() -> Result<u16, Error> {
     let port = unsafe { portman_port };
     let mut client = portman_client::Client::new(port);
@@ -104,11 +130,24 @@ fn get_ringmaster_port() -> Result<u16, Error> {
     }
 }
 //
+// Take a full path to a ring buffer file and return just the filename (ring name)
+// as that's what the ringmaster needs to see.
+//
+fn ring_name(filename: &str) -> String {
+    String::from(
+        path::Path::new(filename)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap(),
+    )
+}
+//
 // Tell the ring master we're connecting a consumer.
 // This formats the CONNECT message, uses ringmaster_request
 // for the rest of it.
 //
-fn connect_consumer(port: u16, ring: &str, slot: usize) -> Result<TcpStream, Error> {
+fn connect_consumer(port: u16, ring: &str, slot: u32) -> Result<TcpStream, Error> {
     let request = format!("CONNECT {} consumer.{} {}", ring, slot, process::id());
 
     ringmaster_request(port, &request)

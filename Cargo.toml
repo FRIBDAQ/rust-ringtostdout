@@ -2,7 +2,7 @@
 name = "nscldaq_ringtostdout"
 
 version = "0.1.0"
-edition = "2021"
+edition = "2018"
 
 [[bin]]
 name="ring2tsdout"
@@ -13,3 +13,5 @@ path="./src/main.rs"
 
 [dependencies]
 nscldaq_ringbuffer = "0.6.0"
+portman_client = "0.1.0"
+proctitle = "0.1.1"

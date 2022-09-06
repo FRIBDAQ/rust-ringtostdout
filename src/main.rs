@@ -25,8 +25,11 @@
 pub mod ringmaster_client;
 use clap::{App, Arg};
 use std::fs;
+use std::io;
+use std::io::Write;
 use std::path;
 use std::process;
+use std::time::Duration;
 
 /// These are the program arguments processed by clap:
 ///
@@ -70,8 +73,10 @@ fn main() {
         }
         Ok(consumer_info) => {
             match consumer_info.client {
-                ringmaster_client::ClientType::Consumer(c) => {}
-                ringmaster_client::ClientType::Producer(p) => {
+                ringmaster_client::ClientType::Consumer(mut c) => {
+                    output_data(&mut c);
+                }
+                ringmaster_client::ClientType::Producer(_p) => {
                     // This is a bad bug we're supposed to be a consumer:
 
                     eprintln!("ERROR - a producer was returned not a consumer");
@@ -79,9 +84,45 @@ fn main() {
                 }
             }
         }
+    };
+    process::exit(-1); // all exits are bad news:
+}
+//
+// Main loop of the program.
+// Each get, we try to do in MByte chunks which we then
+// send to stdout.  We use timed_get with a timeout of a 1ms to reduce
+// latency.
+//
+fn output_data(ring: &mut nscldaq_ringbuffer::ringbuffer::consumer::Consumer) {
+    let mut data = Vec::<u8>::new();
+    data.reserve(1024 * 1024);
+    loop {
+        match ring.timed_get(&mut data, Duration::from_millis(1)) {
+            Ok(n) => {
+                // Actually read n bytes.  We need to send them as binary
+                // to stdout.
+
+                io::stdout()
+                    .write_all(&data[0..n])
+                    .expect("Failed to write to stdout");
+            }
+            Err(e) => {
+                // Time out is ok but anything else is fatal:
+
+                match e {
+                    nscldaq_ringbuffer::ringbuffer::consumer::Error::Timeout => {}
+                    _ => {
+                        eprintln!(
+                            "Error reading from ring buffer: {}",
+                            nscldaq_ringbuffer::ringbuffer::consumer::error_string(&e)
+                        );
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
-
 // Define and process the arguments using clap (old since we need an older
 // rust edition than current:
 

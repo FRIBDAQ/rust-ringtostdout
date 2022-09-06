@@ -16,6 +16,8 @@
 
 use nscldaq_ringbuffer::ringbuffer::{consumer, producer, RingBufferMap};
 use portman_client;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
 use std::path;
@@ -35,6 +37,26 @@ pub enum Error {
     Unimplemented,
 }
 
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let stringified = match self {
+            Error::ConsumerError(e) => {
+                format!("Consumer error {}", consumer::error_string(e))
+            }
+            Error::ProducerError(e) => {
+                format!("Producer error {}", producer::error_string(e))
+            }
+            Error::MapError(s) => format!("Ring Buffer Mapping error {}", s),
+            Error::PortManError(e) => {
+                format!("Error interacting with port manager: {}", e.to_string())
+            }
+            Error::NoRingMaster => format!("Can't interact with ringmaster"),
+            Error::RingMasterFail(s) => format!("Interaction with ringmaster failed: {}", s),
+            Error::Unimplemented => String::from("Unimplemented operation attempted"),
+        };
+        write!(f, "{}", stringified)
+    }
+}
 //
 // Types of clients:
 //

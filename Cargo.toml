@@ -5,7 +5,7 @@ version = "0.1.0"
 edition = "2018"
 
 [[bin]]
-name="ring2tsdout"
+name="ring2stdout"
 path="./src/main.rs"
 
 

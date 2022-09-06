@@ -105,13 +105,19 @@ pub fn set_portman_port(new_port: u16) {
 /// that's holding the connection to the ring master.
 ///
 pub fn attach_consumer(ring_buffer_file: &str) -> RingClientResult {
+    println!("Attach_consumer {}", ring_buffer_file);
     match get_ringmaster_port() {
         Ok(port) => match RingBufferMap::new(ring_buffer_file) {
             Ok(raw_map) => {
+                println!("Ring master is on {}", port);
+                println!("Mapped the ring buffer");
                 let safe_map = Arc::new(Mutex::new(raw_map));
+                println!("made the safe map");
                 match consumer::Consumer::attach(&Arc::clone(&safe_map)) {
                     Ok(consumer) => {
+                        println!("Attached the ring as a consumer");
                         let slot = consumer.get_index();
+                        println!("On slot {}", slot);
                         match connect_consumer(port, &ring_name(&ring_buffer_file), slot) {
                             Err(e) => Err(e),
                             Ok(stream) => Ok(RingClient {
@@ -210,8 +216,7 @@ fn ring_name(filename: &str) -> String {
 // for the rest of it.
 //
 fn connect_consumer(port: u16, ring: &str, slot: u32) -> Result<TcpStream, Error> {
-    let request = format!("CONNECT {} consumer.{} {}", ring, slot, process::id());
-
+    let request = format!("CONNECT {} consumer.{} {}\n", ring, slot, process::id());
     ringmaster_request(port, &request)
 }
 // Tell the ring master we're connecting a producer.
@@ -226,9 +231,11 @@ fn connect_producer(port: u16, ring: &str) -> Result<TcpStream, Error> {
 // Does a ring master request and analyzes the result.
 
 fn ringmaster_request(port: u16, request: &str) -> Result<TcpStream, Error> {
+    println!("Ring master request '{}'", request);
     match TcpStream::connect(format!("127.0.0.1:{}", port).as_str()) {
         Err(_) => Err(Error::NoRingMaster),
         Ok(mut stream) => {
+            println!("Stream connected");
             // write the request and use a buffered reader to get the reply line.
             // we can do this since while we need to keep the stream open we're not
             // interacting any more.
@@ -239,10 +246,13 @@ fn ringmaster_request(port: u16, request: &str) -> Result<TcpStream, Error> {
                 if let Err(_) = stream.flush() {
                     Err(Error::NoRingMaster)
                 } else {
+                    println!("Request written and flushed");
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
                     let mut line = String::new();
                     if let Ok(_n) = reader.read_line(&mut line) {
-                        if line == "Ok\n" {
+                        println!("Line: '{}'", line);
+
+                        if line.trim() == "OK" {
                             Ok(stream)
                         } else {
                             Err(Error::RingMasterFail(line))

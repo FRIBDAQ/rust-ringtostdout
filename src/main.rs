@@ -57,7 +57,7 @@ impl ProgramArguments {
 }
 fn main() {
     let args = process_args();
-    println!("{:#?}", args);
+    eprintln!("{:#?}", args);
 
     // The next step in the game is to establish ourselves as a consumer of
     // the specified ring.  To do that we need to construct the full ringbuffer
@@ -94,8 +94,13 @@ fn main() {
 // latency.
 //
 fn output_data(ring: &mut nscldaq_ringbuffer::ringbuffer::consumer::Consumer) {
+    // We must use a vec -- or a static buffer else the buffer will 
+    // overflow the stack.  Vec will allocate on the heap,
+    // Note that evidently, the vector & can be treated as &[u8] which is
+    // what both timed_get and write_all need.
     let mut data = Vec::<u8>::new();
     data.reserve(1024 * 1024);
+    data.resize(1024 * 1024, 0);
     loop {
         match ring.timed_get(&mut data, Duration::from_millis(1)) {
             Ok(n) => {

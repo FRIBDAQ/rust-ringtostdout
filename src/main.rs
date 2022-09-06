@@ -27,6 +27,8 @@ use clap::{App, Arg};
 use std::fs;
 use std::path;
 use std::process;
+use std::time::Duration;
+use thread::sleep; // these are // for testing
 
 /// These are the program arguments processed by clap:
 ///
@@ -68,7 +70,9 @@ fn main() {
             eprintln!("Failed to attach ring buffer : {}", e);
             process::exit(-1);
         }
-        Ok(consumer_info) => {}
+        Ok(consumer_info) => {
+            sleep(Duration::from_secs(3600));
+        }
     }
 }
 

@@ -105,19 +105,13 @@ pub fn set_portman_port(new_port: u16) {
 /// that's holding the connection to the ring master.
 ///
 pub fn attach_consumer(ring_buffer_file: &str) -> RingClientResult {
-    println!("Attach_consumer {}", ring_buffer_file);
     match get_ringmaster_port() {
         Ok(port) => match RingBufferMap::new(ring_buffer_file) {
             Ok(raw_map) => {
-                println!("Ring master is on {}", port);
-                println!("Mapped the ring buffer");
                 let safe_map = Arc::new(Mutex::new(raw_map));
-                println!("made the safe map");
                 match consumer::Consumer::attach(&Arc::clone(&safe_map)) {
                     Ok(consumer) => {
-                        println!("Attached the ring as a consumer");
                         let slot = consumer.get_index();
-                        println!("On slot {}", slot);
                         match connect_consumer(port, &ring_name(&ring_buffer_file), slot) {
                             Err(e) => Err(e),
                             Ok(stream) => Ok(RingClient {

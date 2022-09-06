@@ -27,8 +27,6 @@ use clap::{App, Arg};
 use std::fs;
 use std::path;
 use std::process;
-use std::time::Duration;
-use thread::sleep; // these are // for testing
 
 /// These are the program arguments processed by clap:
 ///
@@ -71,7 +69,15 @@ fn main() {
             process::exit(-1);
         }
         Ok(consumer_info) => {
-            sleep(Duration::from_secs(3600));
+            match consumer_info.client {
+                ringmaster_client::ClientType::Consumer(c) => {}
+                ringmaster_client::ClientType::Producer(p) => {
+                    // This is a bad bug we're supposed to be a consumer:
+
+                    eprintln!("ERROR - a producer was returned not a consumer");
+                    process::exit(-1);
+                }
+            }
         }
     }
 }

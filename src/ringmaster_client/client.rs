@@ -50,7 +50,7 @@ impl Display for Error {
             Error::PortManError(e) => {
                 format!("Error interacting with port manager: {}", e.to_string())
             }
-            Error::NoRingMaster => format!("Can't interact with ringmaster"),
+            Error::NoRingMaster => format!("The ring master is not running"),
             Error::RingMasterFail(s) => format!("Interaction with ringmaster failed: {}", s),
             Error::Unimplemented => String::from("Unimplemented operation attempted"),
         };

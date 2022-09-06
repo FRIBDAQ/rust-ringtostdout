@@ -10,7 +10,9 @@
 //! a connection to the ring master as long as it needs to be a
 //! client.
 //!
-//!
+//! As such, this provides only support for clients to local rings.
+//! We would need to implement the REMOTE request to support remote
+//! ring buffer access.
 
 use nscldaq_ringbuffer::ringbuffer::{consumer, producer, RingBufferMap};
 use portman_client;
@@ -70,7 +72,7 @@ pub fn set_portman_port(new_port: u16) {
 }
 
 /// Create a consumer of ring data.
-/// This interacts with the ringbuffer crate to
+/// This:
 ///
 /// *  attach a ring buffer client to the ring.
 /// *  contact the port manager to get the ring master port number.
@@ -104,7 +106,45 @@ pub fn attach_consumer(ring_buffer_file: &str) -> RingClientResult {
         Err(e) => Err(e),
     }
 }
+///
+/// Create a producer of data into a ringbuffer.
+/// This:
+///
+/// *    Attaches a ringbuffer producer to the ring if possible.
+/// *    Contacts the port manager to get the RingMaster port.
+/// *    Sends the appropriate CONNECT message to the ring master
+/// to nail down the producer slot.
+///
+/// On success we return a struct that contains the producer object
+/// and the TCP/IP stream the application must keep open on the
+/// ring master.   
+///
+///  
+pub fn attach_producer(ring_buffer_file: &str) -> RingClientResult {
+    // Note the logic is very similar to that of the attach_consumer.
+    // with a bit of thought I could perhaps do some
+    // factorization.
 
+    match get_ringmaster_port() {
+        Ok(port) => match RingBufferMap::new(ring_buffer_file) {
+            Ok(raw_map) => {
+                let safe_map = Arc::new(Mutex::new(raw_map));
+                match producer::Producer::attach(&Arc::clone(&safe_map)) {
+                    Ok(producer) => match connect_producer(port, &ring_name(&ring_buffer_file)) {
+                        Err(e) => Err(e),
+                        Ok(stream) => Ok(RingClient {
+                            client: ClientType::Producer(producer),
+                            ring_master: stream,
+                        }),
+                    },
+                    Err(e) => Err(Error::ProducerError(e)),
+                }
+            }
+            Err(s) => Err(Error::MapError(s)),
+        },
+        Err(e) => Err(e),
+    }
+}
 /*-----------------------------------------------------------------
     Private functions.
     These functions are not exported to the clients of this
@@ -160,6 +200,7 @@ fn connect_producer(port: u16, ring: &str) -> Result<TcpStream, Error> {
 
     ringmaster_request(port, &request)
 }
+
 // Does a ring master request and analyzes the result.
 
 fn ringmaster_request(port: u16, request: &str) -> Result<TcpStream, Error> {

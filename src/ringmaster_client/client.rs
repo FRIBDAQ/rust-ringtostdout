@@ -210,14 +210,14 @@ fn ring_name(filename: &str) -> String {
 // for the rest of it.
 //
 fn connect_consumer(port: u16, ring: &str, slot: u32) -> Result<TcpStream, Error> {
-    let request = format!("CONNECT {} consumer.{} {}\n", ring, slot, process::id());
+    let request = format!("CONNECT {} consumer.{} {} \"RUST Client\"\n", ring, slot, process::id());
     ringmaster_request(port, &request)
 }
 // Tell the ring master we're connecting a producer.
 // Formats the message and lets ringmaster_request do the rest:
 //
 fn connect_producer(port: u16, ring: &str) -> Result<TcpStream, Error> {
-    let request = format!("CONNECT {} producer {}", ring, process::id());
+    let request = format!("CONNECT {} producer {} \"RUST Client\"", ring, process::id());
 
     ringmaster_request(port, &request)
 }

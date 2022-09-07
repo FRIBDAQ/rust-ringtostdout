@@ -1,5 +1,6 @@
 pub mod ringmaster_client;
 use clap::{App, Arg};
+use proctitle;
 use std::fs;
 use std::io;
 use std::io::Write;
@@ -50,6 +51,13 @@ fn main() {
         Ok(consumer_info) => {
             match consumer_info.client {
                 ringmaster_client::ClientType::Consumer(mut c) => {
+                    // If a comment has been given update the process title:
+
+                    if args.comment != "" {
+                        let title = format!("ring2stdout - {}", args.comment);
+                        proctitle::set_title(title);
+                    }
+
                     output_data(&mut c);
                 }
                 ringmaster_client::ClientType::Producer(_p) => {

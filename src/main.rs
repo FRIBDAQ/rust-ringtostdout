@@ -121,7 +121,7 @@ fn process_args() -> ProgramArguments {
     // Use clap to define the options described in the program comments:
     // then run a parse on the argv:
 
-    let parser = App::new(env!("CARGO_BIN_NAME"))
+    let parser = App::new("ring2stdout")   // CARGO_BIN_NAME not in old versions.
         .version(env!("CARGO_PKG_VERSION"))
         .author("Ron Fox")
         .about(env!("CARGO_PKG_DESCRIPTION"))

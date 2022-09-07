@@ -1,7 +1,7 @@
 [package]
 name = "nscldaq_ringtostdout"
 
-version = "0.1.2"
+version = "0.1.3"
 edition = "2018"
 
 #authors = "Ron Fox"
@@ -21,4 +21,4 @@ path="./src/main.rs"
 nscldaq_ringbuffer = "0.6.0"
 portman_client = "0.1.0"
 proctitle = "0.1.1"
-clap = "^2.27.1"
+clap = "=2.27.1"

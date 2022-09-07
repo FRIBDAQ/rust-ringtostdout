@@ -3,6 +3,11 @@ name = "nscldaq_ringtostdout"
 
 version = "0.1.0"
 edition = "2018"
+#authors = "Ron Fox"
+license = "GPL-3.0"
+description = "Rust port of the ringtostdout NSCLDAQ application"
+homepage = "http://docs.frib.msu.edu/daq"
+repository="http://gitlab.msu.edu/foxr/nscldaq_ring2stdout.git"
 
 description = "ringtostdout replacement in RUST that does not require an NSCLDAQ installation"
 

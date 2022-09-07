@@ -94,6 +94,7 @@ fn output_data(ring: &mut nscldaq_ringbuffer::ringbuffer::consumer::Consumer) {
                 io::stdout()
                     .write_all(&data[0..n])
                     .expect("Failed to write to stdout");
+		io::stdout().flush().expect("Failed to flush output");
             }
             Err(e) => {
                 // Time out is ok but anything else is fatal:

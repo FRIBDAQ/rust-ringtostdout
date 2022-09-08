@@ -94,6 +94,7 @@ fn output_data(ring: &mut nscldaq_ringbuffer::ringbuffer::consumer::Consumer) {
                 io::stdout()
                     .write_all(&data[0..n])
                     .expect("Failed to write to stdout");
+                io::stdout().flush().expect("Failed to flush output");
             }
             Err(e) => {
                 // Time out is ok but anything else is fatal:
@@ -121,7 +122,7 @@ fn process_args() -> ProgramArguments {
     // Use clap to define the options described in the program comments:
     // then run a parse on the argv:
 
-    let parser = App::new(env!("CARGO_BIN_NAME"))
+    let parser = App::new("ring2stdout") // CARGO_BIN_NAME not in old versions.
         .version(env!("CARGO_PKG_VERSION"))
         .author("Ron Fox")
         .about(env!("CARGO_PKG_DESCRIPTION"))

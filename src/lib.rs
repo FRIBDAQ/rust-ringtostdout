@@ -4,9 +4,12 @@
 //! takes all the data that buffer has to offer and shoots it out
 //! stdout.  
 //!
-//! ## Usage:
-//!  
-//!     ringtostdout option....
+//! ## Usage
+//!
+//! ```
+//! ringtostdout option...
+//! ```
+//!
 //! Where the options are:
 //!
 //! *   --directory - the directory with the ringbuffers.  If not
